@@ -3,8 +3,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-//INITIAL HANDSHAKE
-
 /***
 struct sockaddr_in
 	short sin_family			: address family (AF_INET)
@@ -16,7 +14,6 @@ struct in_addr
 	unsigned long s_addr 		: IP address of host (INADDR_ANY)
 
 ****/
-
 
 int main(int argc, char * argv[]) { //input server379 portnumber
 	struct sockaddr_in srv_addr;
@@ -66,6 +63,8 @@ int main(int argc, char * argv[]) { //input server379 portnumber
 
 	/***** send username info : length string */
 
+	/***** check if username sent by client already exists */
+	
 
 	return 0;
 }
