@@ -15,7 +15,7 @@ struct in_addr
 
 ****/
 
-int main(int argc, char * argv[]) { //input server379 portnumber
+int main(int argc, char * argv[]) { //input		: server379 portnumber
 	struct sockaddr_in srv_addr;
 	struct sockaddr_in cli_addr;
 	int numconnections = 5; // HOW TO GET NUMBER OF USERS CONNECTED?
@@ -26,7 +26,7 @@ int main(int argc, char * argv[]) { //input server379 portnumber
 	}
 
 	/** send the following two bytes 0xCF 0xA7 **/
-	int portnum = argv[1];
+	int portnum = atoi(argv[1]);
 	int sock = socket(AF_INET, SOCK_STREAM, 0);
 
 	if (sock == -1) {
