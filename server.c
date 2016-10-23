@@ -21,11 +21,13 @@ typedef int bool;
 #define true 1
 #define false 0
 
+int numconnections = 0;
+
 int main(int argc, char * argv[]) { //input		: server379 portnumber
 	struct sockaddr_in srv_addr;
 	struct sockaddr_in cli_addr;
-	int numconnections = 5; // HOW TO GET NUMBER OF USERS CONNECTED?
 	char buffer[255];
+	ssize_t read_size;
 	
 	// if (argc < 1) {
 	// 	printf("Error, too few arguments");
@@ -52,49 +54,58 @@ int main(int argc, char * argv[]) { //input		: server379 portnumber
     	perror("Failed to bind socket");
     }
 
-    listen(sock, numconnections);
+    listen(sock, 20);
 
     socklen_t cli_size = sizeof(cli_addr);
 
     int acceptsock = accept(sock, (struct sockaddr*) &cli_addr, &cli_size);
+    numconnections = numconnections + 1;
+
     if(acceptsock == -1) {
     	perror("Error accepting");
     	exit(1);
     } else {
-    	printf("s-- connect success\n");
+    	// printf("s-- connect success\n");
     }
 
 	// Acknowledgement process
 	// int ACK[2];
 	// ACK[0] = 0xCF; ACK[1] = 0xA7;
 	unsigned char byte;
-	printf("sending ack\n");
+	// printf("sending ack\n");
 	char* ackbuffer[2];
 	sprintf(ackbuffer, "\xCF\xA7\n");
 	byte = *((unsigned char *)&ackbuffer + 0);
-	printf("server buffer %x \n", byte);
+	// printf("server buffer %x \n", byte);
 	byte = *((unsigned char *)&ackbuffer + 1);
-	printf("server buffer %x \n", byte);
+	// printf("server buffer %x \n", byte);
 
-	// printf("server buffer %x\n", buffer[1]);
 	int n = send(acceptsock, (char*)&ackbuffer, 2, 0);
-	if (n < 0) error("ERROR reading from socket");
-	else printf("success\n");
-	// while(1) {
-	// 	printf("sending\n");
-	// 	if(send(acceptsock, (char*)&buffer, 255, 0) < 0) {
-	// 		printf ("failed");
-	// 		return 1;
-	// 	}
+	if (n < 0) error("ERROR sending");
+	// else printf("success\n");
 
-	// }
+	//send the number of connected users
+	int hex_num[1];
+	sprintf(hex_num, "%x", numconnections);
+	n = send(acceptsock, (char*)&hex_num, 1, 0);
 
-	// unsigned int num_connected = htons(numconnections);
-	// send(sock, (char*)&num_connected, sizeof(num_connected), 0);
+	if (n < 0) error("ERROR sending number of connections");
+	// else printf("sent number of connections\n");
 
 	/***** send username info : length string (use linked list) */
 
+	/**** get client's info */
+	char userinfo[255];
+	char* saved_userinfo;
+	printf("getting client's info\n");
+	while (read_size = recv(acceptsock, &userinfo, 255, 0) > 0){
+		printf("got inside loop\n");
+		printf("user info: %s\n", (char*)userinfo);
+		break;
+	}
+
 	/***** check if username sent by client already exists */
+	numconnections = numconnections - 1;
 	close(sock);
 	close(acceptsock);
 	return 0;
