@@ -9,6 +9,24 @@
 
 extern int numconnections;
 
+//struct for linked list 
+typedef struct node {
+	char * user;
+	struct node * next;
+} node_t;
+
+void add_username(node * head, char * username) {
+	node_t * curr = head;
+	while (curr->next != NULL) {
+		curr = curr->next;
+	}
+
+	curr->next = malloc(sizeof(node_t));
+	curr->next->user = username;
+	current->next->next = NULL;
+}
+
+
 int main (int argc, char * argv[]) { //input	: chat379 hostname portnumber username
 	struct sockaddr_in srv_addr;
 	struct sockaddr_in cli_addr;

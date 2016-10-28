@@ -14,14 +14,31 @@ struct sockaddr_in
 
 struct in_addr
 	unsigned long s_addr 		: IP address of host (INADDR_ANY)
-
 ****/
 
 typedef int bool;
 #define true 1
 #define false 0
 
+typedef struct node {
+	char * user;
+	struct node * next;
+} node_t;
+
+void add_username(node * head, char * username) {
+	node_t * curr = head;
+	while (curr->next != NULL) {
+		curr = curr->next;
+	}
+
+	curr->next = malloc(sizeof(node_t));
+	curr->next->user = username;
+	current->next->next = NULL;
+}
+
 int numconnections = 0;
+
+
 
 int main(int argc, char * argv[]) { //input		: server379 portnumber
 	struct sockaddr_in srv_addr;
@@ -29,10 +46,10 @@ int main(int argc, char * argv[]) { //input		: server379 portnumber
 	char buffer[255];
 	ssize_t read_size;
 	
-	// if (argc < 1) {
-	// 	printf("Error, too few arguments");
-	// 	exit(1);
-	// }
+	if (argc !=2) {
+		perror("Error, incorrect number of arguments");
+		exit(1);
+	}
 
 	/** send the following two bytes 0xCF 0xA7 **/
 	int portnum = atoi(argv[1]);
