@@ -38,7 +38,7 @@ void add_username(node * head, char * username) {
 
 int numconnections = 0;
 
-
+node_t * usernames;
 
 int main(int argc, char * argv[]) { //input		: server379 portnumber
 	struct sockaddr_in srv_addr;
