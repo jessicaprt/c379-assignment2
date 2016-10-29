@@ -16,8 +16,8 @@ int main (int argc, char * argv[]) { //input	: chat379 hostname portnumber usern
 	char buffer[255];
 	ssize_t read_size;
 
-	if (argc < 4) {
-		printf("Error, too few arguments");
+	if (argc != 4) {
+		printf("Error, wrong number of arguments");
 		exit(1);
 	}
 
@@ -45,8 +45,6 @@ int main (int argc, char * argv[]) { //input	: chat379 hostname portnumber usern
     //establish connection to server
     if(connect(sock,(struct sockaddr *) &srv_addr, sizeof(srv_addr)) == -1) {
     	perror("Error connnecting\n");
-    } else {
-    	// printf("c--connect success\n");
     }
 
     //Acknowledgement process

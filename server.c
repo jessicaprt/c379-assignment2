@@ -1,22 +1,12 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/poll.h>
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <errno.h>
 
-/***
-struct sockaddr_in
-	short sin_family			: address family (AF_INET)
-	u_short sin_port			: portnumber in network byte order
-	struct in_addr  sin_addr	: IP address
-	char sin_zero[8]			: 0 
-
-struct in_addr
-	unsigned long s_addr 		: IP address of host (INADDR_ANY)
-****/
-
-typedef int bool;
 #define true 1
 #define false 0
 
@@ -25,7 +15,7 @@ typedef struct node {
 	struct node * next;
 } node_t;
 
-void add_username(node * head, char * username) {
+void add_username(node_t * head, char * username) {
 	node_t * curr = head;
 	while (curr->next != NULL) {
 		curr = curr->next;
@@ -33,18 +23,36 @@ void add_username(node * head, char * username) {
 
 	curr->next = malloc(sizeof(node_t));
 	curr->next->user = username;
-	current->next->next = NULL;
+	curr->next->next = NULL;
 }
 
-int numconnections = 0;
+void print_usernames(node_t * head) {
+	node_t * curr = head;
 
-node_t * usernames;
+	while(curr!=NULL) {
+		printf("%s\n", curr->user);
+		curr = curr->next;
+	}
+}
 
 int main(int argc, char * argv[]) { //input		: server379 portnumber
 	struct sockaddr_in srv_addr;
 	struct sockaddr_in cli_addr;
 	char buffer[255];
 	ssize_t read_size;
+	struct pollfd sock_fds[200];
+	int check, on = 1;
+	int expired = false;
+	int acceptsock = -1;
+
+	//current number is sock_fds
+	int nfds = 1;
+
+	node_t * usernames = NULL;
+	usernames = malloc(sizeof(node_t));
+	usernames->user = "usernames: ";
+	usernames->next = NULL;
+
 	
 	if (argc !=2) {
 		perror("Error, incorrect number of arguments");
@@ -60,6 +68,14 @@ int main(int argc, char * argv[]) { //input		: server379 portnumber
 		exit(1);
 	}
 
+	//allow socket to be reusable
+	check = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on));
+	if(check < 0) {
+		perror("setsockopt failed");
+		close(sock);
+		exit(-1);
+	}
+
 	//set all values in a buffer to zero, initialize srv_addr to zero
     bzero((char *) &srv_addr, sizeof(srv_addr));
     srv_addr.sin_family = AF_INET;
@@ -67,69 +83,102 @@ int main(int argc, char * argv[]) { //input		: server379 portnumber
     srv_addr.sin_port = htons(portnum); //in network byte order
 
     //binding to socket
-    if(bind(sock, (struct sockaddr*) &srv_addr, sizeof(srv_addr)) == -1) {
+    check = bind(sock, (struct sockaddr*) &srv_addr, sizeof(srv_addr));
+    if(check < 0) {
     	perror("Failed to bind socket");
+    	close(sock);
+    	exit(-1);
     }
 
-    listen(sock, 20);
+    check = listen(sock, 20);
+    if (check < 0) {
+    	perror("Failed to listen to socket");
+    	exit(-1);
+    }
 
+    //initialize poll fd
+    memset(sock_fds, 0, sizeof(sock_fds));
+
+    sock_fds[0].fd = sock;
+    sock_fds[0].events = POLLIN;
+
+    int timeout = 10000;
     socklen_t cli_size = sizeof(cli_addr);
 
-    int acceptsock = accept(sock, (struct sockaddr*) &cli_addr, &cli_size);
-    numconnections = numconnections + 1;
+    while(expired == false) {
+    	printf("waiting.. \n");
+    	check = poll(sock_fds, nfds, timeout);
+    	if (check < 0) {
+    		perror("poll failed");
+    		break;
+    	}
+    	if (check == 0) {
+    		printf("timeout\n");
+    		break;
+    	}
 
-    if(acceptsock == -1) {
-    	perror("Error accepting");
-    	exit(1);
-    } else {
-    	// printf("s-- connect success\n");
+    	int i = 0;
+    	int nsize = nfds;
+    	for (i=0; i < nsize; i++) {
+    		if(sock_fds[i].revents == 0) continue;
+
+    		if(sock_fds[i].revents != POLLIN) {
+    			printf("Error");
+    			expired = true;
+    			break;
+    		}
+
+    		if(sock_fds[i].fd == sock) {
+    			printf("socket is readable: \n");
+
+    			while(acceptsock > 0) {
+					acceptsock = accept(sock, (struct sockaddr*) &cli_addr, &cli_size);
+
+				    if(acceptsock == -1) {
+				    	perror("Error accepting");
+				    	exit(1);
+				    }
+
+					// Acknowledgement process
+					unsigned char byte;
+					char* ackbuffer[2];
+					sprintf(ackbuffer, "\xCF\xA7\n");
+					byte = *((unsigned char *)&ackbuffer + 0);
+					byte = *((unsigned char *)&ackbuffer + 1);
+
+					int n = send(acceptsock, (char*)&ackbuffer, 2, 0);
+					if (n < 0) error("ERROR sending");
+
+					//send the number of connected users
+					int hex_num[1];
+					sprintf(hex_num, "%x", nfds);
+					n = send(acceptsock, (char*)&hex_num, 1, 0);
+
+					if (n < 0) error("ERROR sending number of connections");
+
+					/***** send username info : length string (use linked list) */
+
+					/**** get client's info */
+					char userinfo[255];
+					char* saved_userinfo;
+					printf("getting client's info\n");
+					while (read_size = recv(acceptsock, &userinfo, 255, 0) > 0){
+						printf("user info: %s\n", (char*)userinfo);
+						add_username(usernames, (char*)userinfo);
+						print_usernames(usernames);
+						break;
+					}
+
+				    nfds++;
+    			}
+    		}
+    	}    	
     }
 
-	// Acknowledgement process
-	// int ACK[2];
-	// ACK[0] = 0xCF; ACK[1] = 0xA7;
-	unsigned char byte;
-	// printf("sending ack\n");
-	char* ackbuffer[2];
-	sprintf(ackbuffer, "\xCF\xA7\n");
-	byte = *((unsigned char *)&ackbuffer + 0);
-	// printf("server buffer %x \n", byte);
-	byte = *((unsigned char *)&ackbuffer + 1);
-	// printf("server buffer %x \n", byte);
+    int j = 0;
+    for(j = 0; j< nfds; j++) {
+    	if(sock_fds[j].fd >=0) close(sock_fds[j].fd);
+    }
 
-	int n = send(acceptsock, (char*)&ackbuffer, 2, 0);
-	if (n < 0) error("ERROR sending");
-	// else printf("success\n");
-
-	//send the number of connected users
-	int hex_num[1];
-	sprintf(hex_num, "%x", numconnections);
-	n = send(acceptsock, (char*)&hex_num, 1, 0);
-
-	if (n < 0) error("ERROR sending number of connections");
-	// else printf("sent number of connections\n");
-
-	/***** send username info : length string (use linked list) */
-
-	/**** get client's info */
-	char userinfo[255];
-	char* saved_userinfo;
-	printf("getting client's info\n");
-	while (read_size = recv(acceptsock, &userinfo, 255, 0) > 0){
-		printf("got inside loop\n");
-		printf("user info: %s\n", (char*)userinfo);
-		break;
-	}
-
-	/***** check if username sent by client already exists */
-	numconnections = numconnections - 1;
-	close(sock);
-	close(acceptsock);
 	return 0;
 }
-
-        // if( send(sock , message , strlen(message) , 0) < 0)
-        // {
-        //     puts("Send failed");
-        //     return 1;
-        // }
