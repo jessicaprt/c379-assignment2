@@ -2,9 +2,10 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/poll.h>
+#include <sys/ioctl.h>
 #include <netinet/in.h>
 #include <stdlib.h>
-#include <strings.h>
+#include <string.h>
 #include <errno.h>
 #include <signal.h>
 #include "servcli.h"
@@ -50,7 +51,7 @@ int main(int argc, char * argv[]) { //input		: server379 portnumber
 	//current number in sock_fds
 	int nfds = 1;
 
-	signal(SIGTERM, endconnection);
+	signal(SIGINT, endconnection);
 
 	node_t * usernames = NULL;
 	usernames = malloc(sizeof(node_t));
@@ -80,7 +81,14 @@ int main(int argc, char * argv[]) { //input		: server379 portnumber
 		exit(-1);
 	}
 
-	//set all values in a buffer to zero, initialize srv_addr to zero
+	//set socket to be nonblocking
+	check = ioctl(sock, FIONBIO, (char *)&on);
+	if (check < 0) {
+		perror("ioctl failed");
+		close(sock);
+		exit(-1);
+	}
+
     bzero((char *) &srv_addr, sizeof(srv_addr));
     srv_addr.sin_family = AF_INET;
     srv_addr.sin_addr.s_addr = INADDR_ANY;
@@ -104,46 +112,6 @@ int main(int argc, char * argv[]) { //input		: server379 portnumber
 
     //initialize pollfd
     memset(sock_fds, 0, sizeof(sock_fds));
-
-
-   	acceptsock = accept(sock, (struct sockaddr*) &cli_addr, &cli_size);
-
-    if(acceptsock == -1) {
-    	perror("Error accepting");
-    	exit(1);
-    }	
-
-
-
-    // Acknowledgement process
-	unsigned char byte;
-	char* ackbuffer[2];
-	sprintf(ackbuffer, "\xCF\xA7\n");
-	byte = *((unsigned char *)&ackbuffer + 0);
-	byte = *((unsigned char *)&ackbuffer + 1);
-
-	int n = send(acceptsock, (char*)&ackbuffer, 2, 0);
-	if (n < 0) error("ERROR sending");
-
-	//send the number of connected users
-	int hex_num[1];
-	sprintf(hex_num, "%x", nfds);
-	n = send(acceptsock, (char*)&hex_num, 1, 0);
-
-	if (n < 0) error("ERROR sending number of connections");
-
-	/***** send username info : length string (use linked list) */
-
-	/**** get client's info */
-	char userinfo[255];
-	char* saved_userinfo;
-	printf("getting client's info\n");
-	while (read_size = recv(acceptsock, &userinfo, 255, 0) > 0){
-		printf("user info: %s\n", (char*)userinfo);
-		add_username(usernames, (char*)userinfo);
-		print_usernames(usernames);
-		break;
-	}
 
 	/**** begin message passing here ****/
 
@@ -170,6 +138,41 @@ int main(int argc, char * argv[]) { //input		: server379 portnumber
     	}
 
     	do {
+
+		   	acceptsock = accept(sock, (struct sockaddr*) &cli_addr, &cli_size);
+
+		    if(acceptsock == -1) {
+		    	perror("Error accepting");
+		    	exit(1);
+		    }	
+
+		    // Acknowledgement process
+			unsigned char byte;
+			char* ackbuffer[2];
+			sprintf(ackbuffer, "\xCF\xA7\n");
+			byte = *((unsigned char *)&ackbuffer + 0);
+			byte = *((unsigned char *)&ackbuffer + 1);
+
+			int n = send(acceptsock, (char*)&ackbuffer, 2, 0);
+			if (n < 0) error("ERROR sending");
+
+			//send the number of connected users
+			int hex_num[1];
+			sprintf(hex_num, "%x", nfds);
+			n = send(acceptsock, (char*)&hex_num, 1, 0);
+
+			if (n < 0) error("ERROR sending number of connections");
+
+			/**** get client's info */
+			char userinfo[255];
+			char* saved_userinfo;
+			printf("getting client's info\n");
+			while (read_size = recv(acceptsock, &userinfo, 255, 0) > 0){
+				printf("user info: %s\n", (char*)userinfo);
+				add_username(usernames, (char*)userinfo);
+				print_usernames(usernames);
+				break;
+			}
     		printf("loop\n");
     		int i = 0;
 	    	int nsize = nfds;
@@ -215,6 +218,8 @@ int main(int argc, char * argv[]) { //input		: server379 portnumber
     for(j = 0; j< nfds; j++) {
     	if(sock_fds[j].fd >=0) close(sock_fds[j].fd);
     }
+
+    close(sock);
 
 	return 0;
 }

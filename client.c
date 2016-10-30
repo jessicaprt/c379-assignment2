@@ -25,7 +25,7 @@ int main (int argc, char * argv[]) { //input	: chat379 hostname portnumber usern
 	int check;
 	struct pollfd sock_fds[200];
 
-	signal(SIGTERM, endconnection);
+	signal(SIGINT, endconnection);
 
 	if (argc != 4) {
 		printf("Error, wrong number of arguments");
@@ -109,7 +109,6 @@ int main (int argc, char * argv[]) { //input	: chat379 hostname portnumber usern
     int nfds = 1;
 
 	/** begin message passing **/
-	char * curr_user = sendusername;
 	while(true) {
 		printf("looooooping\n");
 		int pollcheck = poll(sock_fds, nfds, timeout);
@@ -127,7 +126,7 @@ int main (int argc, char * argv[]) { //input	: chat379 hostname portnumber usern
 
     	// do {
     		printf("connecting..\n");
-		 	printf("%s: ", curr_user);
+		 	printf("%s: ", username);
 		 	bzero(buffer, 256);
 		 	fgets(buffer, 255, stdin);
 		 	printf("sending\n");
