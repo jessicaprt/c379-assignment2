@@ -6,14 +6,10 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <errno.h>
+#include <signal.h>
+#include "servcli.h"
 
-#define true 1
-#define false 0
-
-typedef struct node {
-	char * user;
-	struct node * next;
-} node_t;
+int sock;
 
 void add_username(node_t * head, char * username) {
 	node_t * curr = head;
@@ -35,6 +31,12 @@ void print_usernames(node_t * head) {
 	}
 }
 
+void endconnection(int signum) {
+	printf("s: closing socket\n");
+	close(sock);
+	exit(1);
+}
+
 int main(int argc, char * argv[]) { //input		: server379 portnumber
 	struct sockaddr_in srv_addr;
 	struct sockaddr_in cli_addr;
@@ -45,8 +47,10 @@ int main(int argc, char * argv[]) { //input		: server379 portnumber
 	int expired = false;
 	int acceptsock = -1;
 
-	//current number is sock_fds
+	//current number in sock_fds
 	int nfds = 1;
+
+	signal(SIGTERM, endconnection);
 
 	node_t * usernames = NULL;
 	usernames = malloc(sizeof(node_t));
@@ -61,7 +65,7 @@ int main(int argc, char * argv[]) { //input		: server379 portnumber
 
 	/** send the following two bytes 0xCF 0xA7 **/
 	int portnum = atoi(argv[1]);
-	int sock = socket(AF_INET, SOCK_STREAM, 0);
+	sock = socket(AF_INET, SOCK_STREAM, 0);
 
 	if (sock == -1) {
 		printf("Error opening");
@@ -96,85 +100,117 @@ int main(int argc, char * argv[]) { //input		: server379 portnumber
     	exit(-1);
     }
 
-    //initialize poll fd
+    socklen_t cli_size = sizeof(cli_addr);
+
+    //initialize pollfd
     memset(sock_fds, 0, sizeof(sock_fds));
+
+
+   	acceptsock = accept(sock, (struct sockaddr*) &cli_addr, &cli_size);
+
+    if(acceptsock == -1) {
+    	perror("Error accepting");
+    	exit(1);
+    }	
+
+
+
+    // Acknowledgement process
+	unsigned char byte;
+	char* ackbuffer[2];
+	sprintf(ackbuffer, "\xCF\xA7\n");
+	byte = *((unsigned char *)&ackbuffer + 0);
+	byte = *((unsigned char *)&ackbuffer + 1);
+
+	int n = send(acceptsock, (char*)&ackbuffer, 2, 0);
+	if (n < 0) error("ERROR sending");
+
+	//send the number of connected users
+	int hex_num[1];
+	sprintf(hex_num, "%x", nfds);
+	n = send(acceptsock, (char*)&hex_num, 1, 0);
+
+	if (n < 0) error("ERROR sending number of connections");
+
+	/***** send username info : length string (use linked list) */
+
+	/**** get client's info */
+	char userinfo[255];
+	char* saved_userinfo;
+	printf("getting client's info\n");
+	while (read_size = recv(acceptsock, &userinfo, 255, 0) > 0){
+		printf("user info: %s\n", (char*)userinfo);
+		add_username(usernames, (char*)userinfo);
+		print_usernames(usernames);
+		break;
+	}
+
+	/**** begin message passing here ****/
 
     sock_fds[0].fd = sock;
     sock_fds[0].events = POLLIN;
 
-    int timeout = 10000;
-    socklen_t cli_size = sizeof(cli_addr);
+    int timeout = 10000; 
 
-    while(expired == false) {
+    do {
+
     	printf("waiting.. \n");
-    	check = poll(sock_fds, nfds, timeout);
-    	if (check < 0) {
+
+    	int pollcheck = poll(sock_fds, nfds, timeout);
+    	printf("check: %i\n", pollcheck);
+
+	   	if (pollcheck < 0) {
     		perror("poll failed");
     		break;
     	}
-    	if (check == 0) {
+
+    	if (pollcheck == 0) {
     		printf("timeout\n");
     		break;
     	}
 
-    	int i = 0;
-    	int nsize = nfds;
-    	for (i=0; i < nsize; i++) {
-    		if(sock_fds[i].revents == 0) continue;
+    	do {
+    		printf("loop\n");
+    		int i = 0;
+	    	int nsize = nfds;
 
-    		if(sock_fds[i].revents != POLLIN) {
-    			printf("Error");
-    			expired = true;
-    			break;
-    		}
+    		for (i=0; i < nsize; i++) {
+	    		if(sock_fds[i].revents == 0) continue;
 
-    		if(sock_fds[i].fd == sock) {
-    			printf("socket is readable: \n");
+	    		if(sock_fds[i].revents != POLLIN) {
+	    			printf("Error");
+	    			expired = true;
+	    			break;
+	    		}
 
-    			while(acceptsock > 0) {
-					acceptsock = accept(sock, (struct sockaddr*) &cli_addr, &cli_size);
+	    		pollcheck = poll(sock_fds, nfds, 30000);
+	    		if(sock_fds[i].fd == sock) {
+	    			printf("socket is readable: \n");
+	    			do {
+	    				bzero(buffer, 256);
+	    				check = read(acceptsock, buffer, 255);
+	    				printf("read check: %i\n", check);
+	    				if (check<0) perror("Error reading from socket");
+	    				printf("user: %s\n", buffer);
+	    				check = write(acceptsock, "message received", 16);
+	    				printf("write check: %i\n", check);
+	    				if (check < 0) perror("error writing to socket");
+					    // nfds++;
+	    			} while(pollcheck > 0);
+	    		}
+	    	}    
 
-				    if(acceptsock == -1) {
-				    	perror("Error accepting");
-				    	exit(1);
-				    }
+    	} while(check > 0);
 
-					// Acknowledgement process
-					unsigned char byte;
-					char* ackbuffer[2];
-					sprintf(ackbuffer, "\xCF\xA7\n");
-					byte = *((unsigned char *)&ackbuffer + 0);
-					byte = *((unsigned char *)&ackbuffer + 1);
 
-					int n = send(acceptsock, (char*)&ackbuffer, 2, 0);
-					if (n < 0) error("ERROR sending");
 
-					//send the number of connected users
-					int hex_num[1];
-					sprintf(hex_num, "%x", nfds);
-					n = send(acceptsock, (char*)&hex_num, 1, 0);
+    	printf("poll did not timeout\n");
 
-					if (n < 0) error("ERROR sending number of connections");
+    	
+    		
+    } while(expired == false);
 
-					/***** send username info : length string (use linked list) */
-
-					/**** get client's info */
-					char userinfo[255];
-					char* saved_userinfo;
-					printf("getting client's info\n");
-					while (read_size = recv(acceptsock, &userinfo, 255, 0) > 0){
-						printf("user info: %s\n", (char*)userinfo);
-						add_username(usernames, (char*)userinfo);
-						print_usernames(usernames);
-						break;
-					}
-
-				    nfds++;
-    			}
-    		}
-    	}    	
-    }
-
+    printf("left while\n");
     int j = 0;
     for(j = 0; j< nfds; j++) {
     	if(sock_fds[j].fd >=0) close(sock_fds[j].fd);

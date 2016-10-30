@@ -6,8 +6,15 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h> 
+#include "servcli.h"
 
-extern int numconnections;
+int sock;
+
+void endconnection(int signum) {
+	printf("c: closing socket\n");
+	close(sock);
+	exit(1);
+}
 
 int main (int argc, char * argv[]) { //input	: chat379 hostname portnumber username
 	struct sockaddr_in srv_addr;
@@ -15,6 +22,10 @@ int main (int argc, char * argv[]) { //input	: chat379 hostname portnumber usern
 	struct hostent *server;
 	char buffer[255];
 	ssize_t read_size;
+	int check;
+	struct pollfd sock_fds[200];
+
+	signal(SIGTERM, endconnection);
 
 	if (argc != 4) {
 		printf("Error, wrong number of arguments");
@@ -45,9 +56,9 @@ int main (int argc, char * argv[]) { //input	: chat379 hostname portnumber usern
     //establish connection to server
     if(connect(sock,(struct sockaddr *) &srv_addr, sizeof(srv_addr)) == -1) {
     	perror("Error connnecting\n");
-    }
+	}
 
-    //Acknowledgement process
+	//Acknowledgement process
     char ackbuffer[2];
 	unsigned char byte0, byte1;
 
@@ -65,6 +76,7 @@ int main (int argc, char * argv[]) { //input	: chat379 hostname portnumber usern
 	printf("done receiving ack\n");
 	if (byte0 != 0xcf || byte1 != 0xa7) printf("byte failed\n");
 	// else printf("ack success\n");
+
 
 	/**** get number of connections from server; */
 	char connections[2];
@@ -85,12 +97,47 @@ int main (int argc, char * argv[]) { //input	: chat379 hostname portnumber usern
 	// printf("size: %i\n", strlen(sendusername));
 	int n = send(sock, (char*)&sendusername, strlen(sendusername), 0);
 	if (n < 0) error("ERROR sending number of connections");
-
+	printf("ack done\n");
 	// send(sock, (char*)&sendusername, strlen(sendusername), 0);
 
-	/** check if username exists 
-	 *  terminate connection if it exists
-	**/
+	// check if username exists terminate connection if it exists
+
+	sock_fds[0].fd = sock;
+    sock_fds[0].events = POLLOUT;
+
+    int timeout = 10000;
+    int nfds = 1;
+
+	/** begin message passing **/
+	while(true) {
+		printf("looooooping\n");
+		int pollcheck = poll(sock_fds, nfds, timeout);
+    	printf("check: %i\n", pollcheck);
+
+	   	if (pollcheck < 0) {
+    		perror("poll failed");
+    		break;
+    	}
+
+    	if (pollcheck == 0) {
+    		printf("timeout\n");
+    		break;
+    	}
+
+    	do {
+    		printf("connecting..\n");
+		 	printf("%s: ", sendusername);
+		 	bzero(buffer, 256);
+		 	fgets(buffer, 255, stdin);
+		 	printf("sending\n");
+		 	check = send(sock, buffer, strlen(buffer), 0);
+		 	if (check < 0) perror("Error writing to socket");
+		 	check = read(sock, buffer, strlen(buffer));
+		 	if (check < 0) perror("Error reading from socket");
+		 	printf("serv: %s\n", buffer);
+		 } while(check > 0 | pollcheck >0);
+	 	
+	 }
 
 	//chat connection
 
