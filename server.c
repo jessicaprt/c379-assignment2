@@ -192,11 +192,11 @@ int main(int argc, char * argv[]) { //input		: server379 portnumber
 	    				printf("read check: %i\n", check);
 	    				if (check<0) perror("Error reading from socket");
 	    				printf("user: %s\n", buffer);
-	    				check = write(acceptsock, "message received", 16);
-	    				printf("write check: %i\n", check);
-	    				if (check < 0) perror("error writing to socket");
+	    				// check = write(acceptsock, "message received", 16);
+	    				// printf("write check: %i\n", check);
+	    				// if (check < 0) perror("error writing to socket");
 					    // nfds++;
-	    			} while(pollcheck > 0);
+	    			} while(acceptsock >0 | pollcheck > 0);
 	    		}
 	    	}    
 

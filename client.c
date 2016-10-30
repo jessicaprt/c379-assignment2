@@ -109,6 +109,7 @@ int main (int argc, char * argv[]) { //input	: chat379 hostname portnumber usern
     int nfds = 1;
 
 	/** begin message passing **/
+	char * curr_user = sendusername;
 	while(true) {
 		printf("looooooping\n");
 		int pollcheck = poll(sock_fds, nfds, timeout);
@@ -124,18 +125,18 @@ int main (int argc, char * argv[]) { //input	: chat379 hostname portnumber usern
     		break;
     	}
 
-    	do {
+    	// do {
     		printf("connecting..\n");
-		 	printf("%s: ", sendusername);
+		 	printf("%s: ", curr_user);
 		 	bzero(buffer, 256);
 		 	fgets(buffer, 255, stdin);
 		 	printf("sending\n");
 		 	check = send(sock, buffer, strlen(buffer), 0);
 		 	if (check < 0) perror("Error writing to socket");
-		 	check = read(sock, buffer, strlen(buffer));
-		 	if (check < 0) perror("Error reading from socket");
-		 	printf("serv: %s\n", buffer);
-		 } while(check > 0 | pollcheck >0);
+		 	// check = read(sock, buffer, strlen(buffer));
+		 	// if (check < 0) perror("Error reading from socket");
+		 	// printf("serv: %s\n", buffer);
+		 // } while(check > 0 | pollcheck >0);
 	 	
 	 }
 
