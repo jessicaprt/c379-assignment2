@@ -109,35 +109,37 @@ int main (int argc, char * argv[]) { //input	: chat379 hostname portnumber usern
     int nfds = 1;
 
 	/** begin message passing **/
-	while(true) {
-		printf("looooooping\n");
-		int pollcheck = poll(sock_fds, nfds, timeout);
-    	printf("check: %i\n", pollcheck);
 
-	   	if (pollcheck < 0) {
-    		perror("poll failed");
-    		break;
-    	}
+	int pollcheck;
+	do {
+		// printf("looooooping\n");
 
-    	if (pollcheck == 0) {
-    		printf("timeout\n");
-    		break;
-    	}
+		pollcheck = poll(sock_fds, nfds, timeout);
+		printf("check: %i\n", pollcheck);
 
-    	// do {
-    		printf("connecting..\n");
+			if (pollcheck < 0) {
+			perror("poll failed");
+			break;
+		}
+
+		if (pollcheck == 0) {
+			printf("timeout\n");
+			break;
+		}
+    	do {
+    		// printf("connecting..\n");
 		 	printf("%s: ", username);
 		 	bzero(buffer, 256);
 		 	fgets(buffer, 255, stdin);
-		 	printf("sending\n");
+		 	// printf("sending\n");
 		 	check = send(sock, buffer, strlen(buffer), 0);
 		 	if (check < 0) perror("Error writing to socket");
-		 	// check = read(sock, buffer, strlen(buffer));
-		 	// if (check < 0) perror("Error reading from socket");
+		 	check = read(sock, buffer, strlen(buffer));
+		 	if (check < 0) perror("Error reading from socket");
 		 	// printf("serv: %s\n", buffer);
-		 // } while(check > 0 | pollcheck >0);
+		} while(check > 0 | pollcheck >0);
 	 	
-	 }
+	 } while (pollcheck > 0);
 
 	//chat connection
 

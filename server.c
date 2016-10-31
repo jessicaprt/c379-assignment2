@@ -173,11 +173,12 @@ int main(int argc, char * argv[]) { //input		: server379 portnumber
 				print_usernames(usernames);
 				break;
 			}
-    		printf("loop\n");
     		int i = 0;
 	    	int nsize = nfds;
 
     		for (i=0; i < nsize; i++) {
+
+    			printf("loop\n");	
 	    		if(sock_fds[i].revents == 0) continue;
 
 	    		if(sock_fds[i].revents != POLLIN) {
@@ -186,19 +187,22 @@ int main(int argc, char * argv[]) { //input		: server379 portnumber
 	    			break;
 	    		}
 
-	    		pollcheck = poll(sock_fds, nfds, 30000);
+	    		// pollcheck = poll(sock_fds, nfds, 30000);
 	    		if(sock_fds[i].fd == sock) {
 	    			printf("socket is readable: \n");
 	    			do {
 	    				bzero(buffer, 256);
 	    				check = read(acceptsock, buffer, 255);
-	    				printf("read check: %i\n", check);
-	    				if (check<0) perror("Error reading from socket");
-	    				printf("user: %s\n", buffer);
-	    				// check = write(acceptsock, "message received", 16);
+	    				// printf("read check: %i\n", check);
+	    				if (check<0) {
+	    					printf("connection terminated by user\n");
+	    					exit(1);
+	    				}
+	    				printf("user: %s", buffer);
+	    				check = write(acceptsock, "message received", 16);
 	    				// printf("write check: %i\n", check);
-	    				// if (check < 0) perror("error writing to socket");
-					    // nfds++;
+	    				if (check < 0) perror("error writing to socket");
+					    nfds++;
 	    			} while(acceptsock >0 | pollcheck > 0);
 	    		}
 	    	}    
@@ -223,3 +227,10 @@ int main(int argc, char * argv[]) { //input		: server379 portnumber
 
 	return 0;
 }
+
+/** to do:
+ * - connection expires after 30 seconds of inactivity from client
+ * - log files
+ * - dealing with multiple connections
+ * - how the client can terminate the connection (right now it's by ctrl+c)
+ ***/
