@@ -6,17 +6,14 @@
 #include "server.h"
 #include "user.h"
 #include "user_list.h"
+#include "user_coms.h"
 
-void broadcast_user_join(user_t* user){
-
-}
-
-void broadcast_user_quit(user_t* user){
-
-}
-
-void user_handler_function(void* passed_sd){
-    int s = send_user_list(passed_sd);
+void* user_handler_function(void* passed_sd){
+    int socket = *((int *) passed_sd);
+    int s = send_user_list(socket);
+    if (s < 0){
+        return;
+    }
     
     user_t* user;
 
