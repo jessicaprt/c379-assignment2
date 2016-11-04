@@ -2,8 +2,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include <unistd.h>
 
+#include "server.h"
 #include "user.h"
 #include "user_list.h"
 
@@ -117,8 +119,10 @@ int64_t user_list_read_lock(){
     pthread_mutex_lock(&user_list_check_mutex);
     pthread_mutex_lock(&user_list_mutex);
     user_list_reader_count += 1;
+    
     pthread_mutex_unlock(&user_list_mutex);
-    pthread_mutex_lock(&user_list_check_mutex);
+    pthread_mutex_unlock(&user_list_check_mutex);
+
     return user_list_reader_count;
 }
 
@@ -128,6 +132,7 @@ int64_t user_list_read_unlock(){
         user_list_reader_count -= 1;
     }
     pthread_mutex_unlock(&user_list_check_mutex);
+
     return user_list_reader_count;
 }
 
