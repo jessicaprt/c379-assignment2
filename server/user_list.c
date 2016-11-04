@@ -49,7 +49,9 @@ int append_user(user_t* user){
 
 
 user_t* create_user(char* name, uint8_t name_length, int socket){
-    
+    fprintf(log_stream, "Allocating User Object\n");
+    fflush(log_stream);
+
     user_t* user = malloc(sizeof(user_t));
     if(user == NULL){
         return NULL;
@@ -68,17 +70,26 @@ user_t* create_user(char* name, uint8_t name_length, int socket){
 
     user->socket = socket;
 
-    if(pthread_mutex_init(user->lock, NULL) != 0){
+    user->lock = malloc(sizeof(pthread_mutex_t));
+    if(user->lock == NULL){
+        return NULL;
+    }
+    memset(user->lock, 0, sizeof(pthread_mutex_t));
+
+    if( pthread_mutex_init(user->lock, NULL) != 0){
         free(user->name);
         free(user);
+
         return NULL;
     }
 
     user->n = NULL;
     user->p = NULL;
     
-    return user;
+    fprintf(log_stream, "Successfully Allocated User Object\n");
+    fflush(log_stream);
 
+    return user;
 }
 
 int remove_user(user_t* user){
@@ -159,11 +170,20 @@ int is_name_used(char* name, uint8_t length){
 
     user_list_read_lock();
 
+    char tmp_name[length + 1];
+    strncpy(tmp_name, name, length);
+    tmp_name[length] = '\0';
+    fprintf(log_stream, "Checking to see if user %s exists.\n", tmp_name);
+    fflush(log_stream);
+
+
     cuser = user_list_head;
     while (cuser != NULL){
         if(length == cuser->name_length){
             if(strncmp(name, cuser->name, length) == 0){ 
                 user_list_read_unlock();
+                fprintf(log_stream, "User exists\n");
+                fflush(log_stream);
                 return 1;
             }
         }
@@ -173,6 +193,8 @@ int is_name_used(char* name, uint8_t length){
 
     user_list_read_unlock();
 
+    fprintf(log_stream, "User does not exist\n");
+    fflush(log_stream);
     return 0;
 }
 

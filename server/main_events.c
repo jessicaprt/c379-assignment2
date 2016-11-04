@@ -20,15 +20,19 @@ void handle_signal(int sigfd){
         fprintf(log_stream, "Signal file malformed\n");
         fflush(log_stream);
         stop_running();
+        return;
     }
 
     if (fdsi.ssi_signo == SIGTERM) {
         fprintf(log_stream, "SIGTERM Received starting termination.\n");
         fflush(log_stream);
         stop_running();
+        return;
     } else if (fdsi.ssi_signo == SIGINT) {
-        fprintf(log_stream, "SIGINT Received. Server interupted. Resuming.\n");
+        fprintf(log_stream, "SIGINT Received. Server interupted.\n");
         fflush(log_stream);
+        stop_running();
+        return;
     }
 
 
@@ -44,6 +48,9 @@ void initiate_handshake(int socket){
         fflush(log_stream);
         return;
     }
+
+    fprintf(log_stream, "Main Thread Socket ID: %d\n", socket);
+    fflush(log_stream);
     create_user_handler(socket);
 }
 
