@@ -1,4 +1,4 @@
-# CMPUT 379i: Operating Systems
+# CMPUT 379: Operating Systems
 ##  Assignment 2: Fall 2016
 Jessica Prieto 1412737
 
@@ -15,10 +15,13 @@ and the main file for the client in client.c
 
 ## Compilling
 ### Server
+Enter the server directory and run "make all"
 
 ### Client
+Enter the client directory and run "make all"
 
 ## Running
 Server: ./server379 [port]
+
 Client: ./client379 [hostname] [port] [username]
 

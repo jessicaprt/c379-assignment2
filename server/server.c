@@ -31,7 +31,7 @@ int main(int argc, char * argv[]) {
     mp_fds[0].events = POLLIN;
     mp_fds[1].fd = signals;
     mp_fds[1].events = POLLIN;
-    int mp_timeout = -1;
+    const int mp_timeout = -1;
     int poll_status;
 
     // event loop
