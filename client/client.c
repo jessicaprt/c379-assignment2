@@ -8,6 +8,7 @@
 #include <netdb.h>
 #include <signal.h>
 #include <poll.h>
+#include <pthread.h>
  
 int sock;
 
@@ -56,7 +57,6 @@ int open_connection(char * hostname, char * port){
 }
 
 void endconnection(int signum) {
-    printf("\nyou have left the chat\n");
     close(sock);
     exit(1);
 }
@@ -68,8 +68,6 @@ int get_user_list(int sock) {
 	char connections[255];
 	uint16_t numconnections;
 	int check;
-
-   	printf("grabbing user infopooooooooo\n");
 
     uint16_t connected;
     printf("getting number of connections.\n");
@@ -96,30 +94,66 @@ int get_user_list(int sock) {
     return 0;
 }
 
-void writeMessage() {
+void * writeMessage(void * notused) {
+	// size_t length = sizeof(uint16_t);
+	char buffer[255];
+    char user_message[255];
+    int check;
+
 	do {
-	    char buffer[255];
-        char user_message[255];
-        printf("%s: ", username);
         bzero(buffer, 256);
         fgets(buffer, 255, stdin);
         buffer[strcspn(buffer, "\n")] = '\0';
  
-        sprintf(user_message, "%s", buffer, (void*)threadMessage1);
+        sprintf(user_message, "%s", buffer);
  
         // printf("sending\n");
         uint16_t message_length = htons(strlen(user_message));
         send(sock, &message_length ,2 ,0);
-        check = send(sock, user_message, message_length, 0);
         if (check < 0) perror("Error writing to socket");
-        printf("%s", buffer);
+        check = send(sock, user_message, strlen(user_message), 0);
+        if (check < 0) perror("Error writing to socket");
+        // printf("%s", buffer);
     } while (check > 0);
 }
 
-void getMessage() {
-	do {
+void * getMessage(void * notused) {
+	int check;
+	uint8_t message_code;
 
-	} while(check > 0);
+	do {
+		recv(sock, &message_code, sizeof(uint8_t), 0);
+			printf("messageeee %i\n", message_code);
+		if (message_code == 0x00) {
+			uint16_t message_length;
+			uint8_t user_length;
+			char username[UINT8_MAX] = { 0 };
+			char message[UINT16_MAX] = { 0 };
+
+			recv(sock, &user_length, sizeof(uint8_t), 0);
+			recv(sock, &username, user_length, 0);
+			recv(sock, &message_length, sizeof(uint16_t), 0);
+			recv(sock, &message, ntohs(message_length), 0);
+			printf("%s: %s\n", username, message);
+		}
+
+		if (message_code == 0x01) {
+			uint8_t user_length;
+			char username[UINT8_MAX] = { 0 };
+			recv(sock, &user_length, sizeof(uint8_t), 0);
+			recv(sock, &username, user_length, 0);
+			printf("%s has joined\n", username);
+		}
+
+		if (message_code == 0x02) {
+			uint8_t user_length;
+			char username[UINT8_MAX] = { 0 };
+			recv(sock, &user_length, sizeof(uint8_t), 0);
+			recv(sock, &username, user_length, 0);
+			printf("%s has left\n", username);
+		}
+		
+	} while(1);
 }
 
 int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber username
@@ -134,8 +168,7 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
 
     pthread_t writeMessage_thread, getMessage_thread;
     int check1, check2;
-    const char * threadMessage1;
-    const char * threadMessage2;
+    char * threadMessage2;
     // struct pollfd sock_fds[200];
  
     signal(SIGTSTP, endconnection);
@@ -153,7 +186,7 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
         exit(EXIT_FAILURE);
     }
 
-    int sock = open_connection(argv[1], argv[2]);
+    sock = open_connection(argv[1], argv[2]);
  
     if (sock == -1) {
         printf("Error opening\n");
@@ -171,7 +204,6 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
 		fprintf(stdout, "%hhx, %hhx\n", buffer[0], buffer[1]);
 		fprintf(stderr, "Server does not speak protocol\n");
 	}
-	fprintf(stdout,"jj %s\n", buffer);
 
 	/** get the user list from server **/
    	int getlist = get_user_list(sock);
@@ -186,20 +218,20 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
 	printf("done sending to user\n");
 
     char joined[255];
-    printf("%s has joined the chat!\n", username);
  
-    /** begin sending message **/
-    check1 = pthread_create(&getMessage_thread, NULL, getMessage, threadMessage1);
+    // /** begin sending message **/
+    check1 = pthread_create(&getMessage_thread, NULL, getMessage, NULL);
     if (check1) {
     	perror("error getting message (thread error)");
     	exit(EXIT_FAILURE);
     }
 
-    check2 = pthread_create(&writeMessage_thread, NULL, writeMessage, threadMessage2);
+
+    check2 = pthread_create(&writeMessage_thread, NULL, writeMessage, NULL);
     if (check2) {
     	perror("error writing message (thread error)");
     }
-
+    // writeMessage(NULL);
     pthread_join(getMessage_thread, NULL);
     pthread_join(writeMessage_thread, NULL);
  
