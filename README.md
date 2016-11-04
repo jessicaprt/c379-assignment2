@@ -1,4 +1,4 @@
-# CMPUT 379i: Operating Systems
+# CMPUT 379: Operating Systems
 ##  Assignment 2: Fall 2016
 Jessica Prieto 1412737
 
@@ -20,5 +20,6 @@ and the main file for the client in client.c
 
 ## Running
 Server: ./server379 [port]
+
 Client: ./client379 [hostname] [port] [username]
 
