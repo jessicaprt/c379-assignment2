@@ -165,15 +165,7 @@ int user_list_write_unlock(){
     return 0;
 }
 
-int is_name_used(char* name, uint8_t length){
-    if (find_user_by_name(name, length) == NULL){
-        return 0;
-    }
-
-    return 1;
-}
-
-user_t find_user_by_name(char* name, uint8_t length){
+user_t* find_user_by_name(char* name, uint8_t length){
     user_t* cuser;
 
     user_list_read_lock();
@@ -204,4 +196,12 @@ user_t find_user_by_name(char* name, uint8_t length){
     fprintf(log_stream, "User does not exist\n");
     fflush(log_stream);
     return NULL;
+}
+
+int is_name_used(char* name, uint8_t length){
+    if (find_user_by_name(name, length) == NULL){
+        return 0;
+    }
+
+    return 1;
 }

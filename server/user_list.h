@@ -15,5 +15,6 @@ int user_list_write_unlock();
 int64_t user_list_read_lock();
 int64_t user_list_read_unlock();
 int is_name_used(char* name, uint8_t length);
+user_t* get_user_by_name(char* name, uint8_t length);
 
 #endif
