@@ -16,7 +16,7 @@ uint64_t user_list_reader_count = 0;
 
 user_t* user_list_head = NULL;
 user_t* user_list_tail = NULL;
-int16_t user_list_length = 0;
+uint16_t user_list_length = 0;
 
 void user_list_init(){
     pthread_mutex_init(&user_list_check_mutex, NULL);
