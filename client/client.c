@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <signal.h>
+#include <poll.h>
  
 int sock;
  
