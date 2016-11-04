@@ -109,8 +109,10 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
     s = recv(sock, buffer, buff_size, 0);
 	if (buffer[0] == (char) 0xCF && buffer[1] == (char) 0xA7){
 		fprintf(stdout, "Connected to server.\n");
+		printf("sengding user info to server\n");
 		send(sock, &username_length, sizeof(uint8_t), 0);
 		send(sock, username, username_length, 0);
+		printf("done sending to user\n");
 	} else {
 		fprintf(stdout, "%hhx, %hhx\n", buffer[0], buffer[1]);
 		fprintf(stderr, "Server does not speak protocol\n");
@@ -133,15 +135,7 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
         read(sock, userinfolist, sizeof(buffer));
         printf("%s\n", userinfolist);
     }
- 
-    /**** send username info to server****/
-    char sendusername[255];
-    sprintf(sendusername, "%x %s", username_length, username);
-    printf("buff: %s", sendusername);
-    printf("size: %i\n", strlen(sendusername));
-    int n = send(sock, (char*)&sendusername, strlen(sendusername), 0);
-    if (n < 0) error("ERROR sending username info");
- 
+    
     char joined[255];
     sprintf(joined, "%s has joined the chat!\n", username);
     n = send(sock, (char*)&joined, strlen(joined), 0);
@@ -149,7 +143,7 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
     printf("%s has joined the chat!\n", username);
  
     /** begin sending message **/
-    while (check > 0) {
+    do {
         char user_message[255];
         printf("%s: ", username);
         bzero(buffer, 256);
@@ -163,7 +157,7 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
         check = read(sock, buffer, strlen(buffer));
         if (check < 0) perror("Error reading from socket");
         printf("%s", buffer);
-    }
+    } while (check > 0);
  
     close(sock);
     return 0;
