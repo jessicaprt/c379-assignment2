@@ -89,22 +89,13 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
  
     if (sock == -1) {
         printf("Error opening\n");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
  
     //Acknowledgement process
     const size_t buff_size = 1024;
     buffer[buff_size];
-    // unsigned char byte0, byte1;
- 
-    // while (read_size = recv(sock, buffer, 2, 0) > 0){
-    //     //loops while waiting for bytes to be received
-    //     byte0 = *((unsigned char *)&buffer);
-    //     byte1 = *((unsigned char *)&buffer + 1);
-    //     break;
-    // }
 
-    // if (byte0 != (char) 0xcf || byte1 != (char) 0xa7) printf("byte failed\n");
     int s = 0;
     s = recv(sock, buffer, buff_size, 0);
 	if (buffer[0] == (char) 0xCF && buffer[1] == (char) 0xA7){
@@ -129,17 +120,22 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
     printf("number of users: %i\n", connected);
     printf("Users connected: ");
 
-    char userinfolist[255];
+    size_t userlistsize = 1024;
+    char userinfolist[userliztsize];
     int i = 0;
     while(i<connected) {
         read(sock, userinfolist, sizeof(buffer));
         printf("%s\n", userinfolist);
     }
-    
+
     char joined[255];
     sprintf(joined, "%s has joined the chat!\n", username);
-    n = send(sock, (char*)&joined, strlen(joined), 0);
-    if (n < 0) error("ERROR sending username info");
+    int n = send(sock, (char*)&joined, strlen(joined), 0);
+    if (n < 0) {
+    	error("ERROR sending username info");
+    	exit(EXIT_FAILURE);
+    }
+
     printf("%s has joined the chat!\n", username);
  
     /** begin sending message **/
