@@ -21,7 +21,7 @@ Enter the server directory and run "make all"
 Enter the client directory and run "make all"
 
 ## Running
-Server: ./server379 [port]
+Server: ./bin/server379 [port]
 
-Client: ./client379 [hostname] [port] [username]
+Client: ./bin/client379 [hostname] [port] [username]
 

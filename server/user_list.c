@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "user.h"
 #include "user_list.h"
@@ -13,7 +14,7 @@ uint64_t user_list_reader_count = 0;
 
 user_t* user_list_head = NULL;
 user_t* user_list_tail = NULL;
-uint16_t user_list_length = 0;
+int16_t user_list_length = 0;
 
 void user_list_init(){
     pthread_mutex_init(&user_list_check_mutex, NULL);
@@ -110,7 +111,7 @@ int delete_user(user_t* user){
     return 0;
 }
 
-uint64_t user_list_read_lock(){
+int64_t user_list_read_lock(){
     pthread_once(&user_list_once, user_list_init);
 
     pthread_mutex_lock(&user_list_check_mutex);
@@ -121,7 +122,7 @@ uint64_t user_list_read_lock(){
     return user_list_reader_count;
 }
 
-uint64_t user_list_read_unlock(){
+int64_t user_list_read_unlock(){
     pthread_mutex_lock(&user_list_check_mutex);
     if(user_list_reader_count > 0){
         user_list_reader_count -= 1;

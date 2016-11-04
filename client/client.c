@@ -148,7 +148,7 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
     sprintf(joined, "%s has joined the chat!\n", username);
     int n = send(sock, (char*)&joined, strlen(joined), 0);
     if (n < 0) {
-    	error("ERROR sending username info");
+    	perror("ERROR sending username info");
     	exit(EXIT_FAILURE);
     }
 
