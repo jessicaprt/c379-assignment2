@@ -12,7 +12,7 @@
 int send_user_list(int socket){
     user_t* cuser;
 
-    user_list_lock();
+    user_list_read_lock();
 
     cuser = user_list_head;
 
@@ -39,7 +39,7 @@ int send_user_list(int socket){
         cuser = cuser->n;
     }
 
-    user_list_unlock();
+    user_list_read_unlock();
 
     return 0;
 }
@@ -56,7 +56,7 @@ void broadcast_user_join(user_t* user){
 
     user_t* cuser;
 
-    user_list_lock();
+    user_list_read_lock();
 
     cuser = user_list_head;
 
@@ -81,7 +81,7 @@ void broadcast_user_join(user_t* user){
         cuser = cuser->n;
     }
 
-    user_list_unlock();
+    user_list_read_unlock();
 }
 
 void broadcast_user_quit(user_t* user){
@@ -96,7 +96,7 @@ void broadcast_user_quit(user_t* user){
 
     user_t* cuser;
 
-    user_list_lock();
+    user_list_read_lock();
 
     cuser = user_list_head;
 
@@ -121,7 +121,7 @@ void broadcast_user_quit(user_t* user){
         cuser = cuser->n;
     }
 
-    user_list_unlock();
+    user_list_read_unlock();
 }
 
 void broadcast_msg(user_t* user, uint16_t msg_length, char* msg){
@@ -139,7 +139,7 @@ void broadcast_msg(user_t* user, uint16_t msg_length, char* msg){
 
     user_t* cuser;
 
-    user_list_lock();
+    user_list_read_lock();
 
     cuser = user_list_head;
 
@@ -174,5 +174,5 @@ void broadcast_msg(user_t* user, uint16_t msg_length, char* msg){
         cuser = cuser->n;
     }
 
-    user_list_unlock();
+    user_list_read_unlock();
 }
