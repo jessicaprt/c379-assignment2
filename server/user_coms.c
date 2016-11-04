@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <pthread.h>
+#include <arpa/inet.h>
 
 #include "server.h"
 #include "user.h"
@@ -44,13 +45,22 @@ int send_user_list(int socket){
 }
 
 void broadcast_user_join(user_t* user){
+
+    int s = 0;
+
+    char tmp_name[user->name_length + 1];
+    strncpy(tmp_name, user->name, user->name_length);
+    tmp_name[user->name_length] = '\0';
+    fprintf(log_stream, "User %s quit.\n", tmp_name);
+    fflush(log_stream);
+
     user_t* cuser;
 
     user_list_lock();
 
     cuser = user_list_head;
 
-    uint8_t msg_type = 0x1;
+    uint8_t msg_type = 0x01;
 
     while (cuser != NULL){
         pthread_mutex_lock(cuser->lock);
@@ -72,18 +82,25 @@ void broadcast_user_join(user_t* user){
     }
 
     user_list_unlock();
-
-    return 0;
 }
 
 void broadcast_user_quit(user_t* user){
+
+    int s = 0;
+
+    char tmp_name[user->name_length + 1];
+    strncpy(tmp_name, user->name, user->name_length);
+    tmp_name[user->name_length] = '\0';
+    fprintf(log_stream, "User %s quit.\n", tmp_name);
+    fflush(log_stream);
+
     user_t* cuser;
 
     user_list_lock();
 
     cuser = user_list_head;
 
-    uint8_t msg_type = 0x2;
+    uint8_t msg_type = 0x02;
 
     while (cuser != NULL){
         pthread_mutex_lock(cuser->lock);
@@ -105,6 +122,57 @@ void broadcast_user_quit(user_t* user){
     }
 
     user_list_unlock();
+}
 
-    return 0;
+void broadcast_msg(user_t* user, uint16_t msg_length, char* msg){
+    int s = 0;
+
+    char tmp_name[user->name_length + 1];
+    char tmp_msg[msg_length + 1];
+    strncpy(tmp_name, user->name, user->name_length);
+    strncpy(tmp_msg, msg, msg_length);
+    tmp_name[user->name_length] = '\0';
+    tmp_msg[msg_length] = '\0';
+    fprintf(log_stream, "Msg: %s: %s\n", tmp_name, tmp_msg);
+    fflush(log_stream);
+
+
+    user_t* cuser;
+
+    user_list_lock();
+
+    cuser = user_list_head;
+
+    uint16_t nusl = htons(msg_length);
+
+    uint8_t msg_type = 0x00;
+
+    while (cuser != NULL){
+        pthread_mutex_lock(cuser->lock);
+
+        s = send(cuser->socket, &(user->name_length), sizeof(uint8_t), 0);
+        if (s < 0){
+            continue;
+        };
+
+        s = send(cuser->socket, user->name, user->name_length, 0);
+        if (s < 0){
+            continue;
+        };
+
+        s = send(cuser->socket, &nusl, sizeof(uint16_t), 0);
+        if (s < 0){
+            continue;
+        };
+
+        s = send(cuser->socket, msg, msg_length, 0);
+        if (s < 0){
+            continue;
+        };
+        pthread_mutex_unlock(cuser->lock);
+
+        cuser = cuser->n;
+    }
+
+    user_list_unlock();
 }

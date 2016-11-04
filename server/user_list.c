@@ -37,15 +37,24 @@ int append_user(user_t* user){
     user_list_length += 1;
 
     user_list_unlock();
+    
+    return 0;
 }
 
 
 user_t* create_user(char* name, uint8_t name_length, int socket){
     
     user_t* user = malloc(sizeof(user_t));
+    if(user == NULL){
+        return NULL;
+    }
     memset(user, 0, sizeof(user_t));
 
     user->name = malloc(name_length);
+    if(user->name == NULL){
+        free(user);
+        return NULL;
+    }
     memset(user->name, 0, name_length);
     strncpy(user->name, name, name_length);
 
@@ -53,7 +62,11 @@ user_t* create_user(char* name, uint8_t name_length, int socket){
 
     user->socket = socket;
 
-    pthread_mutex_init(user->lock, NULL);
+    if(pthread_mutex_init(user->lock, NULL) != 0){
+        free(user->name);
+        free(user);
+        return NULL;
+    }
 
     user->n = NULL;
     user->p = NULL;
@@ -103,3 +116,26 @@ int user_list_unlock(){
     pthread_once(&user_list_once, user_list_init);
     return pthread_mutex_unlock(&user_list_mutex);
 }
+
+int is_name_used(char* name, uint8_t length){
+    user_t* cuser;
+
+    user_list_lock();
+
+    cuser = user_list_head;
+    while (cuser != NULL){
+        if(length == cuser->name_length){
+            if(strncmp(name, cuser->name, length) == 0){ 
+                user_list_unlock();
+                return 1;
+            }
+        }
+
+        cuser = cuser->n;
+    }   
+
+    user_list_unlock();
+
+    return 0;
+}
+
