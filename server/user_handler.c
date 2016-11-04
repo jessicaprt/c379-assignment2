@@ -3,6 +3,12 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <poll.h>
+#include <stdlib.h>
+
+// Socket Handling
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 
 #include "server.h"
 #include "user.h"
@@ -27,7 +33,7 @@ void* user_handler_function(void* passed_sd){
         close(socket);
         fprintf(log_stream, "Unable to send user name list\n");
         fflush(log_stream);
-        return;
+        return NULL;
     }
 
     s = recv(socket, buffer, buff_size, 0);
@@ -35,7 +41,7 @@ void* user_handler_function(void* passed_sd){
         close(socket);
         fprintf(log_stream, "Unable to receive user name\n");
         fflush(log_stream);
-        return;
+        return NULL;
     }
 
 
@@ -47,7 +53,7 @@ void* user_handler_function(void* passed_sd){
 
     if (is_name_used((char *) buffer_ptr, name_length)){
         close(socket);
-        return;
+        return NULL;
     }
 
     user = create_user((char *) buffer_ptr, name_length, socket);
@@ -55,6 +61,7 @@ void* user_handler_function(void* passed_sd){
         close(socket);
         fprintf(log_stream, "Unable to create user\n");
         fflush(log_stream);
+        return NULL;
     }
 
     broadcast_user_join(user);
@@ -65,7 +72,7 @@ void* user_handler_function(void* passed_sd){
     memset(user_fds, 0, sizeof(user_fds));
     user_fds[0].fd = socket;
     user_fds[0].events = POLLIN;
-    const int user_timeout = 30 *1000;
+    const int user_timeout = 30 * 1000;
 
     msg_length = 0;
 
@@ -98,6 +105,7 @@ void* user_handler_function(void* passed_sd){
 
     broadcast_user_quit(user);
     delete_user(user);
+    return passed_sd;
 }
 
 void create_user_handler(int socket){
