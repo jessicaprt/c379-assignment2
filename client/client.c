@@ -9,6 +9,7 @@
 #include <signal.h>
 #include <poll.h>
 #include <pthread.h>
+// #include "../server/get_user_list.c"
  
 int sock;
 
@@ -54,6 +55,11 @@ int open_connection(char * hostname, char * port){
     freeaddrinfo(result);           /* No longer needed */
 
     return sfd;
+}
+
+void keepalive(int signum) {
+    uint16_t message_length = htons(0);
+    send(sock, &message_length ,2 ,0);
 }
 
 void endconnection(int signum) {
@@ -178,6 +184,8 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
     // struct pollfd sock_fds[200];
  
     signal(SIGTSTP, endconnection);
+    signal(SIGALRM, keepalive);
+
  
     if (argc != 4) {
         printf("Error, wrong number of arguments");
