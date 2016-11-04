@@ -151,18 +151,10 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
 	send(sock, &username_length, sizeof(uint8_t), 0);
 	send(sock, username, username_length, 0);
 	sprintf(thisuserinfo, "%i %s", (int)username_length, username);
-	send(sock, thisuserinfo, sizeof(thisuserinfo), 0);
 	printf("%s\n", thisuserinfo);
 	printf("done sending to user\n");
 
     char joined[255];
-    sprintf(joined, "%s has joined the chat!\n", username);
-    int n = send(sock, (char*)&joined, strlen(joined), 0);
-    if (n < 0) {
-    	perror("ERROR sending username info");
-    	exit(EXIT_FAILURE);
-    }
-
     printf("%s has joined the chat!\n", username);
  
     /** begin sending message **/
@@ -171,10 +163,13 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
         printf("%s: ", username);
         bzero(buffer, 256);
         fgets(buffer, 255, stdin);
+        buffer[strcspn(buffer, "\n")] = '\0';
  
-        sprintf(user_message, "%s: %s", username, buffer);
+        sprintf(user_message, "%s", buffer);
  
         // printf("sending\n");
+        uint16_t message_length = htons(strlen(user_message));
+        send(sock, &message_length ,2 ,0);
         check = send(sock, user_message, strlen(user_message), 0);
         if (check < 0) perror("Error writing to socket");
         check = read(sock, buffer, strlen(buffer));
