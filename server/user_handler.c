@@ -18,7 +18,7 @@
 
 const size_t buff_size = 512;
 
-void* user_handler_function(void* passed_sd){
+void* user_handler_function(void* socket_ptr){
     uint8_t buffer[buff_size];
     uint8_t* buffer_ptr;
     uint8_t* end_buffer_ptr = buffer + buff_size;
@@ -27,7 +27,11 @@ void* user_handler_function(void* passed_sd){
 
     int ps, s;
 
-    int socket = *((int *) passed_sd);
+    int socket = *((int *) socket_ptr);
+    free(socket_ptr);
+
+    fprintf(log_stream, "Child Thread Socket ID: %d\n", socket);
+    fflush(log_stream);
     s = send_user_list(socket);
     if (s < 0){
         close(socket);
@@ -105,17 +109,19 @@ void* user_handler_function(void* passed_sd){
 
     broadcast_user_quit(user);
     delete_user(user);
-    return passed_sd;
+    return NULL;
 }
 
 void create_user_handler(int socket){
     int s;
     pthread_t thread;
-    s = pthread_create(&thread, NULL, user_handler_function, &socket);
+    int* socket_ptr = malloc(sizeof(int));
+    *socket_ptr = socket;
+    s = pthread_create(&thread, NULL, user_handler_function, socket_ptr);
     if ( s != 0 ) {
+        close(socket);
         fprintf(log_stream, "Unable create thread.");
         fflush(log_stream);
-        close(socket);
         return;
     }
 

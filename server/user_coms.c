@@ -24,7 +24,9 @@ int send_user_list(int socket){
 
     s = send(socket, &nusl, sizeof(uint16_t), MSG_DONTWAIT);
     if (s < 0){
+        s = errno;
         fprintf(log_stream, "Sending number of users failed\n");
+        fprintf(log_stream, "%s\n", strerror(s));
         fflush(log_stream);
         return -1;
     };

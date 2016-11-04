@@ -48,6 +48,9 @@ void initiate_handshake(int socket){
         fflush(log_stream);
         return;
     }
+
+    fprintf(log_stream, "Main Thread Socket ID: %d\n", socket);
+    fflush(log_stream);
     create_user_handler(socket);
 }
 
