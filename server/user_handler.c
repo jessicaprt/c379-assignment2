@@ -68,6 +68,8 @@ void* user_handler_function(void* socket_ptr){
         return NULL;
     }
 
+    fprintf(log_stream, "Calling broadcast_user_join\n");
+    fflush(log_stream);
     broadcast_user_join(user);
     append_user(user);
 

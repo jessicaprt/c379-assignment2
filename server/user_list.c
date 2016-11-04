@@ -49,7 +49,6 @@ int append_user(user_t* user){
 
 
 user_t* create_user(char* name, uint8_t name_length, int socket){
-    
     fprintf(log_stream, "Allocating User Object\n");
     fflush(log_stream);
 
@@ -58,9 +57,6 @@ user_t* create_user(char* name, uint8_t name_length, int socket){
         return NULL;
     }
     memset(user, 0, sizeof(user_t));
-
-    fprintf(log_stream, "Allocating string for user name\n");
-    fflush(log_stream);
 
     user->name = malloc(name_length);
     if(user->name == NULL){
@@ -74,20 +70,26 @@ user_t* create_user(char* name, uint8_t name_length, int socket){
 
     user->socket = socket;
 
-    fprintf(log_stream, "Allocating User Mutex\n");
-    fflush(log_stream);
+    user->lock = malloc(sizeof(pthread_mutex_t));
+    if(user->lock == NULL){
+        return NULL;
+    }
+    memset(user->lock, 0, sizeof(pthread_mutex_t));
 
-    if(pthread_mutex_init(user->lock, NULL) != 0){
+    if( pthread_mutex_init(user->lock, NULL) != 0){
         free(user->name);
         free(user);
+
         return NULL;
     }
 
     user->n = NULL;
     user->p = NULL;
     
-    return user;
+    fprintf(log_stream, "Successfully Allocated User Object\n");
+    fflush(log_stream);
 
+    return user;
 }
 
 int remove_user(user_t* user){
