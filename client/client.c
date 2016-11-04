@@ -56,7 +56,7 @@ int open_connection(char * hostname, char * port){
 }
 
 void endconnection(int signum) {
-    printf("c: closing socket\n");
+    printf("\nyou have left the chat\n");
     close(sock);
     exit(1);
 }
@@ -65,7 +65,9 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
     struct sockaddr_in srv_addr;
     struct sockaddr_in cli_addr;
     struct hostent *server;
+    const size_t buff_size = 1024;
     char buffer[255];
+    char thisuserinfo[255];
     ssize_t read_size;
     int check;
     // struct pollfd sock_fds[200];
@@ -93,17 +95,22 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
     }
  
     //Acknowledgement process
-    const size_t buff_size = 1024;
     buffer[buff_size];
 
     int s = 0;
     s = recv(sock, buffer, buff_size, 0);
 	if (buffer[0] == (char) 0xCF && buffer[1] == (char) 0xA7){
 		fprintf(stdout, "Connected to server.\n");
-		printf("sengding user info to server\n");
-		send(sock, &username_length, sizeof(uint8_t), 0);
-		send(sock, username, username_length, 0);
+		printf("sending user info to server\n");
+
+		// send(sock, &username_length, sizeof(uint8_t), 0);
+		// send(sock, username, username_length, 0);
+
+		sprintf(thisuserinfo, "%i %s", (int)username_length, username);
+		send(sock, thisuserinfo, sizeof(thisuserinfo), 0);
+		printf("%s\n", thisuserinfo);
 		printf("done sending to user\n");
+
 	} else {
 		fprintf(stdout, "%hhx, %hhx\n", buffer[0], buffer[1]);
 		fprintf(stderr, "Server does not speak protocol\n");
@@ -121,10 +128,16 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
     printf("Users connected: ");
 
     size_t userlistsize = 1024;
-    char userinfolist[userliztsize];
+    char userinfolist[userlistsize];
     int i = 0;
+
     while(i<connected) {
+    	// reads info from all user connected, and check it that user already exists;
         read(sock, userinfolist, sizeof(buffer));
+    	if (thisuserinfo == userinfolist) {
+    		perror("username already exists");
+    		exit(EXIT_FAILURE);
+    	}
         printf("%s\n", userinfolist);
     }
 
