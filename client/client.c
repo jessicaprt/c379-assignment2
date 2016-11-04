@@ -101,16 +101,6 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
     s = recv(sock, buffer, buff_size, 0);
 	if (buffer[0] == (char) 0xCF && buffer[1] == (char) 0xA7){
 		fprintf(stdout, "Connected to server.\n");
-		printf("sending user info to server\n");
-
-		// send(sock, &username_length, sizeof(uint8_t), 0);
-		// send(sock, username, username_length, 0);
-
-		sprintf(thisuserinfo, "%i %s", (int)username_length, username);
-		send(sock, thisuserinfo, sizeof(thisuserinfo), 0);
-		printf("%s\n", thisuserinfo);
-		printf("done sending to user\n");
-
 	} else {
 		fprintf(stdout, "%hhx, %hhx\n", buffer[0], buffer[1]);
 		fprintf(stderr, "Server does not speak protocol\n");
@@ -127,18 +117,31 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
     printf("number of users: %i\n", connected);
     printf("Users connected: ");
 
+
+    printf("sending user info to server\n");
+
+	send(sock, &username_length, sizeof(uint8_t), 0);
+	send(sock, username, username_length, 0);
+
+	sprintf(thisuserinfo, "%i %s", (int)username_length, username);
+	send(sock, thisuserinfo, sizeof(thisuserinfo), 0);
+	printf("%s\n", thisuserinfo);
+	printf("done sending to user\n");
+		
     size_t userlistsize = 1024;
-    char userinfolist[userlistsize];
+    char userinfo_length[userlistsize];
+    char userinfo_username[userlistsize];
     int i = 0;
 
     while(i<connected) {
     	// reads info from all user connected, and check it that user already exists;
-        read(sock, userinfolist, sizeof(buffer));
-    	if (thisuserinfo == userinfolist) {
+        read(sock, userinfo_length, sizeof(userinfo_length)); // read length
+        read(sock, userinfo_username, sizeof(userinfo_username));
+    	if (strcmp(userinfo_username, username) == 0) {
     		perror("username already exists");
     		exit(EXIT_FAILURE);
     	}
-        printf("%s\n", userinfolist);
+        printf("%s\n", userinfo_username);
     }
 
     char joined[255];
