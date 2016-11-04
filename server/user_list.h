@@ -12,5 +12,6 @@ int remove_user(user_t* user);
 int delete_user(user_t* user);
 int user_list_lock();
 int user_list_unlock();
+int is_name_used(char* name, uint8_t length);
 
 #endif
