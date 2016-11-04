@@ -67,6 +67,7 @@ int get_user_list(int sock) {
     char userinfo_username[userlistsize];
 	char connections[255];
 	uint16_t numconnections;
+	int check;
 
    	printf("grabbing user infopooooooooo\n");
 
@@ -92,10 +93,35 @@ int get_user_list(int sock) {
         printf("%s\n", userinfo_username);
         i++;
     }
-
     return 0;
 }
+
+void writeMessage() {
+	do {
+	    char buffer[255];
+        char user_message[255];
+        printf("%s: ", username);
+        bzero(buffer, 256);
+        fgets(buffer, 255, stdin);
+        buffer[strcspn(buffer, "\n")] = '\0';
  
+        sprintf(user_message, "%s", buffer, (void*)threadMessage1);
+ 
+        // printf("sending\n");
+        uint16_t message_length = htons(strlen(user_message));
+        send(sock, &message_length ,2 ,0);
+        check = send(sock, user_message, message_length, 0);
+        if (check < 0) perror("Error writing to socket");
+        printf("%s", buffer);
+    } while (check > 0);
+}
+
+void getMessage() {
+	do {
+
+	} while(check > 0);
+}
+
 int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber username
     struct sockaddr_in srv_addr;
     struct sockaddr_in cli_addr;
@@ -105,6 +131,11 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
     char thisuserinfo[255];
     ssize_t read_size;
     int check;
+
+    pthread_t writeMessage_thread, getMessage_thread;
+    int check1, check2;
+    const char * threadMessage1;
+    const char * threadMessage2;
     // struct pollfd sock_fds[200];
  
     signal(SIGTSTP, endconnection);
@@ -158,25 +189,19 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
     printf("%s has joined the chat!\n", username);
  
     /** begin sending message **/
-    do {
-        char user_message[255];
-        printf("%s: ", username);
-        bzero(buffer, 256);
-        fgets(buffer, 255, stdin);
-        buffer[strcspn(buffer, "\n")] = '\0';
+    check1 = pthread_create(&getMessage_thread, NULL, getMessage, threadMessage1);
+    if (check1) {
+    	perror("error getting message (thread error)");
+    	exit(EXIT_FAILURE);
+    }
+
+    check2 = pthread_create(&writeMessage_thread, NULL, writeMessage, threadMessage2);
+    if (check2) {
+    	perror("error writing message (thread error)");
+    }
+
+    pthread_join(getMessage_thread, NULL);
+    pthread_join(writeMessage_thread, NULL);
  
-        sprintf(user_message, "%s", buffer);
- 
-        // printf("sending\n");
-        uint16_t message_length = htons(strlen(user_message));
-        send(sock, &message_length ,2 ,0);
-        check = send(sock, user_message, strlen(user_message), 0);
-        if (check < 0) perror("Error writing to socket");
-        check = read(sock, buffer, strlen(buffer));
-        if (check < 0) perror("Error reading from socket");
-        printf("%s", buffer);
-    } while (check > 0);
- 
-    close(sock);
     return 0;
 }
