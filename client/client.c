@@ -9,7 +9,6 @@
 #include <signal.h>
 #include <poll.h>
 #include <pthread.h>
-#include "../server/user_list.h"
  
 int sock;
 
@@ -123,8 +122,11 @@ void * getMessage(void * notused) {
 	uint8_t message_code;
 
 	do {
-		recv(sock, &message_code, sizeof(uint8_t), 0);
-			printf("messageeee %i\n", message_code);
+		int bytesread = recv(sock, &message_code, sizeof(uint8_t), 0);
+		if (bytesread == 0) {
+			close(sock);
+			exit(1);
+		}
 		if (message_code == 0x00) {
 			uint16_t message_length;
 			uint8_t user_length;
@@ -144,8 +146,8 @@ void * getMessage(void * notused) {
 			recv(sock, &user_length, sizeof(uint8_t), 0);
 			recv(sock, &username, user_length, 0);
 			printf("%s has joined\n", username);
-			create_user(username, user_length, 0);
-			append_user(username);
+			// create_user(username, user_length, 0);
+			// append_user(username);
 		}
 
 		if (message_code == 0x02) {
@@ -154,7 +156,7 @@ void * getMessage(void * notused) {
 			recv(sock, &user_length, sizeof(uint8_t), 0);
 			recv(sock, &username, user_length, 0);
 			printf("%s has left\n", username);
-			remove_user();
+			// remove_user();
 		}
 		
 	} while(1);
