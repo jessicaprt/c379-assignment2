@@ -3,7 +3,7 @@
 
 extern user_t * user_list_head;
 extern user_t * user_list_tail;
-extern int16_t user_list_length;
+extern uint16_t user_list_length;
 
 
 int append_user(user_t* user);
