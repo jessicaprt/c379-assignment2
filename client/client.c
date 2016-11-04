@@ -60,6 +60,43 @@ void endconnection(int signum) {
     close(sock);
     exit(1);
 }
+
+int get_user_list(int sock) {
+	size_t userlistsize = 1024;
+    char userinfo_length[userlistsize];
+    char userinfo_username[userlistsize];
+	char connections[255];
+
+
+   	printf("grabbing user info\n");
+
+    unsigned char connected_str;
+    uint16_t connected;
+    printf("getting number of connections.\n");
+	
+	int s = recv(sock, connections, sizeof(connections) , 0);
+	if (s < 0) {
+		printf("Error grabbing number of users");
+		return -1;
+	}
+
+    connected = atoi((char *)connections); //should contain the number of users connected
+    printf("%i \n", connected);		
+    
+    printf("number of users: %i\n", connected);
+
+    // int i = 0;
+    // while(i<connected) {
+    // 	// reads info from all user connected, and check it that user already exists;
+    //     read(sock, userinfo_length, sizeof(userinfo_length)); // read length
+    //     read(sock, userinfo_username, sizeof(userinfo_username));
+
+    //     printf("%s\n", userinfo_username);
+    //     i++;
+    // }
+
+    return 0;
+}
  
 int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber username
     struct sockaddr_in srv_addr;
@@ -101,45 +138,22 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
     s = recv(sock, buffer, buff_size, 0);
 	if (buffer[0] == (char) 0xCF && buffer[1] == (char) 0xA7){
 		fprintf(stdout, "Connected to server.\n");
-		printf("sending user info to server\n");
-
-		// send(sock, &username_length, sizeof(uint8_t), 0);
-		// send(sock, username, username_length, 0);
-
-		sprintf(thisuserinfo, "%i %s", (int)username_length, username);
-		send(sock, thisuserinfo, sizeof(thisuserinfo), 0);
-		printf("%s\n", thisuserinfo);
-		printf("done sending to user\n");
-
 	} else {
 		fprintf(stdout, "%hhx, %hhx\n", buffer[0], buffer[1]);
 		fprintf(stderr, "Server does not speak protocol\n");
 	}
- 
-    /**** get number of connections from server; */
-    char connections[2];
-    unsigned char connected_str;
-    unsigned int connected;
-    printf("getting number of connections..\n");
 
-    s = recv(sock, (char*)&connections, 2, 0);
-    connected = atoi((char *)&connections); //should contain the number of users connected
-    printf("number of users: %i\n", connected);
-    printf("Users connected: ");
+   	int getlist = get_user_list(sock);
+   	printf("got list!\n");
 
-    size_t userlistsize = 1024;
-    char userinfolist[userlistsize];
-    int i = 0;
-
-    while(i<connected) {
-    	// reads info from all user connected, and check it that user already exists;
-        read(sock, userinfolist, sizeof(buffer));
-    	if (thisuserinfo == userinfolist) {
-    		perror("username already exists");
-    		exit(EXIT_FAILURE);
-    	}
-        printf("%s\n", userinfolist);
-    }
+    /*** send info to server ***/
+    printf("sending user info to server\n");
+	send(sock, &username_length, sizeof(uint8_t), 0);
+	send(sock, username, username_length, 0);
+	sprintf(thisuserinfo, "%i %s", (int)username_length, username);
+	send(sock, thisuserinfo, sizeof(thisuserinfo), 0);
+	printf("%s\n", thisuserinfo);
+	printf("done sending to user\n");
 
     char joined[255];
     sprintf(joined, "%s has joined the chat!\n", username);
