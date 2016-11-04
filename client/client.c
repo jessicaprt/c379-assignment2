@@ -63,37 +63,35 @@ void endconnection(int signum) {
 
 int get_user_list(int sock) {
 	size_t userlistsize = 1024;
-    char userinfo_length[userlistsize];
+    uint8_t userinfo_length;
     char userinfo_username[userlistsize];
 	char connections[255];
+	uint16_t numconnections;
 
+   	printf("grabbing user infopooooooooo\n");
 
-   	printf("grabbing user info\n");
-
-    unsigned char connected_str;
     uint16_t connected;
     printf("getting number of connections.\n");
 	
-	int s = recv(sock, connections, sizeof(connections) , 0);
+	int s = recv(sock, &numconnections, sizeof(uint16_t), 0);
 	if (s < 0) {
 		printf("Error grabbing number of users");
 		return -1;
 	}
 
-    connected = atoi((char *)connections); //should contain the number of users connected
+    connected = ntohs(numconnections); //should contain the number of users connected
     printf("%i \n", connected);		
     
     printf("number of users: %i\n", connected);
 
-    // int i = 0;
-    // while(i<connected) {
-    // 	// reads info from all user connected, and check it that user already exists;
-    //     read(sock, userinfo_length, sizeof(userinfo_length)); // read length
-    //     read(sock, userinfo_username, sizeof(userinfo_username));
+    int i = 0;
+    while(i<connected) {
+        read(sock, &userinfo_length, 1); // read length
+        read(sock, userinfo_username, userinfo_length);
 
-    //     printf("%s\n", userinfo_username);
-    //     i++;
-    // }
+        printf("%s\n", userinfo_username);
+        i++;
+    }
 
     return 0;
 }
@@ -135,14 +133,16 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
     buffer[buff_size];
 
     int s = 0;
-    s = recv(sock, buffer, buff_size, 0);
+    s = recv(sock, buffer, 2, 0);
 	if (buffer[0] == (char) 0xCF && buffer[1] == (char) 0xA7){
 		fprintf(stdout, "Connected to server.\n");
 	} else {
 		fprintf(stdout, "%hhx, %hhx\n", buffer[0], buffer[1]);
 		fprintf(stderr, "Server does not speak protocol\n");
 	}
+	fprintf(stdout,"jj %s\n", buffer);
 
+	/** get the user list from server **/
    	int getlist = get_user_list(sock);
    	printf("got list!\n");
 
