@@ -60,6 +60,7 @@ int open_connection(char * hostname, char * port){
 void keepalive(int signum) {
     uint16_t message_length = htons(0);
     send(sock, &message_length ,2 ,0);
+    alarm(20);
 }
 
 void endconnection(int signum) {
@@ -181,10 +182,14 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
     pthread_t writeMessage_thread, getMessage_thread;
     int check1, check2;
     char * threadMessage2;
-    // struct pollfd sock_fds[200];
+
+    struct sigaction sigterm;
+
+    sigterm.sa_handler = keepalive;
  
     signal(SIGTSTP, endconnection);
-    signal(SIGALRM, keepalive);
+    sigaction(SIGALRM, &sigterm, NULL);
+    alarm(20);
 
  
     if (argc != 4) {
