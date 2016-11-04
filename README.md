@@ -15,8 +15,10 @@ and the main file for the client in client.c
 
 ## Compilling
 ### Server
+Enter the server directory and run "make all"
 
 ### Client
+Enter the client directory and run "make all"
 
 ## Running
 Server: ./server379 [port]
