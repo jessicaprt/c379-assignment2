@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <pthread.h>
 #include <arpa/inet.h>
+#include <errno.h>
 
 #include "server.h"
 #include "user.h"
@@ -19,19 +20,33 @@ int send_user_list(int socket){
     uint16_t nusl = htons(user_list_length);
     int s = 0;
 
-    s = send(socket, &nusl, sizeof(uint16_t), 0);
+    fprintf(log_stream, "Sending user list\n");
+
+    s = send(socket, &nusl, sizeof(uint16_t), MSG_DONTWAIT);
     if (s < 0){
+        fprintf(log_stream, "Sending number of users failed\n");
+        fflush(log_stream);
         return -1;
     };
 
     while (cuser != NULL){
-        s = send(socket, &(cuser->name_length), sizeof(uint8_t), 0);
+        s = send(socket, &(cuser->name_length), sizeof(uint8_t), MSG_DONTWAIT);
         if (s < 0){
+            s = errno;
+            user_list_read_unlock();
+            fprintf(log_stream, "Sending length of username failed\n");
+            fprintf(log_stream, "%s\n", strerror(s));
+            fflush(log_stream);
             return -1;
         };
 
-        s = send(socket, cuser->name, cuser->name_length, 0);
+        s = send(socket, cuser->name, cuser->name_length, MSG_DONTWAIT);
         if (s < 0){
+            s = errno;
+            user_list_read_unlock();
+            fprintf(log_stream, "Sending username failed\n");
+            fprintf(log_stream, "%s\n", strerror(s));
+            fflush(log_stream);
             return -1;
         };
 
@@ -41,6 +56,8 @@ int send_user_list(int socket){
 
     user_list_read_unlock();
 
+    fprintf(log_stream, "Completed sending user list\n");
+    fflush(log_stream);
     return 0;
 }
 

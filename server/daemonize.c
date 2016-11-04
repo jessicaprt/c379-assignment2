@@ -46,7 +46,7 @@ int daemonize() {
     }
     fflush(log_stream);
 
-    sprintf(filename, "Server PID: %d\n", pid);
+    fprintf(log_stream, "Server PID: %d\n", pid);
     fflush(log_stream);
 
 

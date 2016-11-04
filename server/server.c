@@ -39,6 +39,7 @@ int main(int argc, char * argv[]) {
     while(is_running()) {
 
         fprintf(log_stream, "Polling for new connection or signal\n");
+        fflush(log_stream);
         poll_status = poll(mp_fds, n_mp_fds, mp_timeout);
 
         if(mp_fds[1].revents == POLLIN) {
