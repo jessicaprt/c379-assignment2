@@ -113,9 +113,7 @@ void* user_handler_function(void* socket_ptr){
             if(offset == 0 && s > 0) {
                 memcpy(&msg_length, buffer + offset, sizeof(msg_length));
                 msg_length = ntohs(msg_length);
-                if (msg_length == 0){
-                    fprintf(log_stream, "Keep Alive\n");
-                    fflush(log_stream);
+                if (msg_length == 0){ // Keep Alive
                     continue;
                 }
             }
