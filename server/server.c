@@ -7,7 +7,7 @@
 #include "server.h"
 
 // GLOBALS
-
+#define SERVER_PROG = 1
 FILE * log_stream = NULL;
 
 // END GLOBALS

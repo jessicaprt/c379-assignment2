@@ -52,8 +52,10 @@ int append_user(user_t* user){
 
 
 user_t* create_user(char* name, uint8_t name_length, int socket){
+    #ifdef SERVER_PROG
     fprintf(log_stream, "Allocating User Object\n");
     fflush(log_stream);
+    #endif
 
     user_t* user = malloc(sizeof(user_t));
     if(user == NULL){
@@ -87,9 +89,10 @@ user_t* create_user(char* name, uint8_t name_length, int socket){
     }
 
     user->n = NULL;
-    
+    #ifdef SERVER_PROG
     fprintf(log_stream, "Successfully Allocated User Object\n");
     fflush(log_stream);
+    #endif
 
     return user;
 }
@@ -178,8 +181,10 @@ user_t* find_user_by_name(char* name, uint8_t length){
     char tmp_name[length + 1];
     strncpy(tmp_name, name, length);
     tmp_name[length] = '\0';
+    #ifdef SERVER_PROG
     fprintf(log_stream, "Checking to see if user %s exists.\n", tmp_name);
     fflush(log_stream);
+    #endif
 
 
     cuser = user_list_head;
@@ -187,8 +192,10 @@ user_t* find_user_by_name(char* name, uint8_t length){
         if(length == cuser->name_length){
             if(strncmp(name, cuser->name, length) == 0){ 
                 user_list_read_unlock();
+                #ifdef SERVER_PROG
                 fprintf(log_stream, "User exists\n");
                 fflush(log_stream);
+                #endif
                 return cuser;
             }
         }
@@ -197,9 +204,10 @@ user_t* find_user_by_name(char* name, uint8_t length){
     }   
 
     user_list_read_unlock();
-
+    #ifdef SERVER_PROG
     fprintf(log_stream, "User does not exist\n");
     fflush(log_stream);
+    #endif
     return NULL;
 }
 
