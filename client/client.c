@@ -9,8 +9,8 @@
 #include <signal.h>
 #include <poll.h>
 #include <pthread.h>
-// #include "../server/get_user_list.c"
- 
+#include "../server/user_list.c"
+
 int sock;
 
 int open_connection(char * hostname, char * port){
@@ -96,9 +96,25 @@ int get_user_list(int sock) {
         read(sock, userinfo_username, userinfo_length);
 
         printf("%s\n", userinfo_username);
+        user_t * userlist = create_user(userinfo_username, userinfo_length, 0);
+		append_user(userlist);
         i++;
     }
     return 0;
+}
+
+void print_user_list() {
+//    user_list_read_lock();
+	pthread_mutex_lock(&user_list_mutex);
+	user_t* cuser;
+    cuser = user_list_head;
+
+    while (cuser != NULL) {
+        printf("%s\n", cuser->name);
+        cuser = cuser->n;
+    } 
+    pthread_mutex_lock(&user_list_mutex);
+
 }
 
 void * writeMessage(void * notused) {
@@ -111,6 +127,10 @@ void * writeMessage(void * notused) {
         bzero(buffer, 256);
         fgets(buffer, 255, stdin);
         buffer[strcspn(buffer, "\n")] = '\0';
+        if(strcmp(buffer, "/list")  == 0) {
+        	print_user_list();
+        	continue;
+        }
  
         sprintf(user_message, "%s", buffer);
  
@@ -153,8 +173,8 @@ void * getMessage(void * notused) {
 			recv(sock, &user_length, sizeof(uint8_t), 0);
 			recv(sock, &username, user_length, 0);
 			printf("%s has joined\n", username);
-			// create_user(username, user_length, 0);
-			// append_user(username);
+			user_t * userlist = create_user(username, user_length, 0);
+			append_user(userlist);
 		}
 
 		if (message_code == 0x02) {
@@ -163,9 +183,11 @@ void * getMessage(void * notused) {
 			recv(sock, &user_length, sizeof(uint8_t), 0);
 			recv(sock, &username, user_length, 0);
 			printf("%s has left\n", username);
-			// remove_user();
+			user_t * removeuser = find_user_by_name(username, user_length);
+			remove_user(removeuser);
+			delete_user(removeuser);
 		}
-		
+
 	} while(1);
 }
 
@@ -173,6 +195,7 @@ int main (int argc, char * argv[]) { //input    : chat379 hostname portnumber us
     struct sockaddr_in srv_addr;
     struct sockaddr_in cli_addr;
     struct hostent *server;
+
     const size_t buff_size = 1024;
     char buffer[255];
     char thisuserinfo[255];
