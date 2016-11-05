@@ -9,6 +9,6 @@ server379: server/server.c server/daemonize.c server/main_events.c server/open_m
 	mv server379 bin/
  
 chat379: client/client.c
-	gcc -o chat379 client/client.c
+	gcc -o chat379 client/client.c -pthread
 	mkdir -p bin
 	mv chat379 bin/

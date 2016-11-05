@@ -15,7 +15,6 @@ static pthread_once_t user_list_once = PTHREAD_ONCE_INIT;
 uint64_t user_list_reader_count = 0;
 
 user_t* user_list_head = NULL;
-user_t* user_list_tail = NULL;
 uint16_t user_list_length = 0;
 
 void user_list_init(){
@@ -25,7 +24,7 @@ void user_list_init(){
 
 int append_user(user_t* user){
 
-    if (user->n != NULL && user->p != NULL){
+    if (user->n != NULL){
         return -1; // User already in list.    
     }   
 
@@ -33,15 +32,19 @@ int append_user(user_t* user){
 
     if(user_list_head == NULL){
         user_list_head = user;
-    }   
-    if(user_list_tail != NULL){
-        user_list_tail->n = user;
-    }   
-    user->p = user_list_tail;
-    user_list_tail = user;
+    } else {  
+        user_t* cuser = user_list_head;
 
+        while(cuser->n != NULL){
+            cuser = cuser->n;
+        }   
+
+        cuser->n = user;
+
+    }
+
+    user->n = NULL;
     user_list_length += 1;
-
     user_list_write_unlock();
     
     return 0;
@@ -84,7 +87,6 @@ user_t* create_user(char* name, uint8_t name_length, int socket){
     }
 
     user->n = NULL;
-    user->p = NULL;
     
     fprintf(log_stream, "Successfully Allocated User Object\n");
     fflush(log_stream);
@@ -93,18 +95,21 @@ user_t* create_user(char* name, uint8_t name_length, int socket){
 }
 
 int remove_user(user_t* user){
-    if (user->n == NULL && user->p == NULL){
-        return -1; // user in list
-    }
     user_list_write_lock();
 
-    if(user_list_tail != NULL){
-        user_list_tail->n = user->n;
-    }
-    if(user_list_head != NULL){
-        user_list_head->p = user->p;
+    if(user == user_list_head){
+        user_list_head = user->n;
+    } else {
+        user_t* cuser = user_list_head;
+
+        while(cuser->n != user){
+            cuser = cuser->n;
+        }
+
+        cuser->n = user->n;
     }
 
+    user->n = NULL;
     user_list_length -= 1;
     user_list_write_unlock();
 
@@ -113,12 +118,12 @@ int remove_user(user_t* user){
 
 int delete_user(user_t* user){
     pthread_mutex_lock(user->lock);
-    remove_user(user);
 
     close(user->socket);
     free(user->name);
     pthread_mutex_unlock(user->lock);
     pthread_mutex_destroy(user->lock);
+    free(user->lock);
     free(user);
 
     return 0;

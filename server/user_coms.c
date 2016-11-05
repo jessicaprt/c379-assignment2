@@ -64,7 +64,7 @@ int send_user_list(int socket){
 }
 
 void broadcast_user_join(user_t* user){
-    fprintf(log_stream, "Preparing User Join Broadcast.\n");
+    fprintf(log_stream, "Preparing JOIN Broadcast.\n");
     fflush(log_stream);
 
     int s = 0;
@@ -112,7 +112,7 @@ void broadcast_user_join(user_t* user){
 }
 
 void broadcast_user_quit(user_t* user){
-    fprintf(log_stream, "Preparing User Quit Broadcast.\n");
+    fprintf(log_stream, "Preparing QUIT Broadcast.\n");
     fflush(log_stream);
 
     int s = 0;
@@ -129,27 +129,34 @@ void broadcast_user_quit(user_t* user){
 
     uint8_t msg_type = 0x02;
 
+    fprintf(log_stream, "Starting to send QUIT Messages.\n");
+    fflush(log_stream);
+
     while (cuser != NULL){
         pthread_mutex_lock(cuser->lock);
 
+        fflush(log_stream);
         s = send(cuser->socket, &msg_type, sizeof(uint8_t), 0);
         if (s < 0){
             continue;
         };
 
+        fflush(log_stream);
         s = send(cuser->socket, &(user->name_length), sizeof(uint8_t), 0);
         if (s < 0){
             continue;
         };
 
+        fflush(log_stream);
         s = send(cuser->socket, user->name, user->name_length, 0);
         if (s < 0){
             continue;
         };
 
+        fflush(log_stream);
         pthread_mutex_unlock(cuser->lock);
 
-
+        fflush(log_stream);
         cuser = cuser->n;
     }
 
@@ -160,6 +167,9 @@ void broadcast_user_quit(user_t* user){
 }
 
 void broadcast_msg(user_t* user, uint16_t msg_length, char* msg){
+    fprintf(log_stream, "Preparing MSG Broadcast.\n");
+    fflush(log_stream);
+
     int s = 0;
 
     char tmp_name[user->name_length + 1];
@@ -168,8 +178,6 @@ void broadcast_msg(user_t* user, uint16_t msg_length, char* msg){
     strncpy(tmp_msg, msg, msg_length);
     tmp_name[user->name_length] = '\0';
     tmp_msg[msg_length] = '\0';
-    fprintf(log_stream, "MSG: %s: %s\n", tmp_name, tmp_msg);
-    fflush(log_stream);
 
 
     user_t* cuser;
@@ -213,6 +221,9 @@ void broadcast_msg(user_t* user, uint16_t msg_length, char* msg){
 
         cuser = cuser->n;
     }
+
+    fprintf(log_stream, "MSG: %s: %s\n", tmp_name, tmp_msg);
+    fflush(log_stream);
 
     user_list_read_unlock();
 }

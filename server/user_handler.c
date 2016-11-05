@@ -103,8 +103,9 @@ void* user_handler_function(void* socket_ptr){
             fflush(log_stream);
             break;
         } else if (user_fds[0].revents == POLLIN) {
+            fflush(log_stream);
             s = recv(socket, buffer + offset, buff_size - offset, 0);
-            if (s < 0){
+            if (s <= 0){
                 break;
             }
 
@@ -113,6 +114,8 @@ void* user_handler_function(void* socket_ptr){
                 memcpy(&msg_length, buffer + offset, sizeof(msg_length));
                 msg_length = ntohs(msg_length);
                 if (msg_length == 0){
+                    fprintf(log_stream, "Keep Alive\n");
+                    fflush(log_stream);
                     continue;
                 }
             }
@@ -122,7 +125,7 @@ void* user_handler_function(void* socket_ptr){
             fprintf(log_stream, "Offset: %d, MSGLength: %d\nBuffer: ", offset, msg_length);
             fflush(log_stream);
             print_buffer(log_stream, buffer, offset);
-            
+
             if (offset - 2 < msg_length) {
                 continue;
             } else if (offset - 2 >= msg_length) {
@@ -130,14 +133,17 @@ void* user_handler_function(void* socket_ptr){
 
                 memset(buffer, 0, buff_size);
                 offset = 0;
+                msg_length = 0;
             }
         } else {
             fprintf(log_stream, "Error while polling\n");
             fflush(log_stream);
             break;
         }
+
     }
 
+    remove_user(user);
     broadcast_user_quit(user);
     delete_user(user);
     return NULL;
