@@ -1,6 +1,8 @@
 #ifndef __USER_LIST_H__
 #define __USER_LIST_H__
 
+extern FILE* log_stream;
+
 extern user_t * user_list_head;
 extern user_t * user_list_tail;
 extern uint16_t user_list_length;
