@@ -20,7 +20,8 @@
 const size_t buff_size = 1024;
 
 void print_buffer(FILE* file_stream, uint8_t* buffer, size_t length){
-    for (size_t i = 0; i < length; i++){
+    size_t i = 0;
+    for (i = 0; i < length; i++){
         fprintf(file_stream, "%hhx", buffer[i]);
     }
     fprintf(file_stream, "\n"); 
